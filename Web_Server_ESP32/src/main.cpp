@@ -2,7 +2,7 @@
 #include <WiFi.h>
 
 const char* ssid = "YourID";
-const char* password = "YourPassaword";
+const char* password = "YourPassWord";
 
 #define led 12
 #define buzzer 26
@@ -70,7 +70,7 @@ void loop(){
             client.println("<p><a href=\"/L\"><button class=\"botao_desliga\">DESLIGA LED</button></a></p>");
             client.println("<p><a href=\"/BH\"><button class=\"botao_liga\">LIGA BUZZER</button></a></p>");
             client.println("<p><a href=\"/BL\"><button class=\"botao_desliga\">DESLIGA BUZZER</button></a></p>");
-
+            client.println("<h3>By: GabrielCCouto</h3>");
             client.println("</body></html>");
 
             //client.print("Click <a href=\"/H\">here</a> LED ON.<br>");

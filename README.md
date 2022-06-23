@@ -4,9 +4,9 @@ Esse repositório tem o intuito de disponibilizar diversos projetos utilizando o
 ## Estrutura
 Para melhor entendimento dos projetos eles estão estruturados da seguinte forma:
 - `Web_Server_ESP32` Projeto de como acender um LED e tocar um Buzzer por Web Server.
-- `Robotic_Arm` Projeto `Ainda em desenvolvimento!`
-- `Nanoleaf` Projeto `Não iniciado!`
+- `Nanoleaf` Projeto de painéis com fita led endereçável WS2812, controlável por app, ainda em `desenvolvimento!`
 - `Ambilight` Projeto `Não iniciado!`
+- `Robotic_Arm` Projeto `Não iniciado!`
 
 
 ## Desenvolvimento

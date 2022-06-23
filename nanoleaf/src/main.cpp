@@ -17,10 +17,10 @@ void setup() {
 }
 
 void loop() {
-  //raioArcoiris();
-  //cometa(color, tipo);
-  //respiracao(selcor, velocidade);
-  //explosao();
-  //gradienteOndas();
+  raioArcoiris();
+  cometa(color, tipo);
+  respiracao(selcor, velocidade);
+  explosao();
+  gradienteOndas(tipo, 3);
   fullWhite();
 }

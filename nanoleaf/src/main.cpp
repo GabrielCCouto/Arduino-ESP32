@@ -1,26 +1,60 @@
 #include <Arduino.h>
-#include "effect.h"
+#include <FastLED.h>
+#include "effects.h"
 
-// Cometa
+#define touch 2
+
+int contador = 0;
 uint8_t color = 0;
-int tipo = 2;
 
-//Respiração
-byte selcor = 100;
-uint8_t velocidade = 1; // Colocar 1, 2 ou 3
+void(* resetFunc) (void) = 0;
+
+void pinTouch (){
+  delay(50);
+  FastLED.show();
+  fillSolidColor(CRGB::Black);
+  contador++;
+  Serial.println(contador);
+  loop();
+}
 
 void setup() {
-  FastLED.addLeds<WS2812B, PINO_FITA, GRB>(fita, NUM_LEDS_FITA);
-  FastLED.setBrightness(200);
+  pinMode(touch, INPUT);
+  Serial.begin(9600);
 
-  Serial.begin(115200);
+  FastLED.addLeds<WS2812B, PINO_FITA, GRB>(fita, NUM_LEDS_FITA);
+  FastLED.setBrightness(100);
+  attachInterrupt(digitalPinToInterrupt(touch), pinTouch, RISING);
+
 }
 
 void loop() {
-  raioArcoiris();
-  cometa(color, tipo);
-  respiracao(selcor, velocidade);
-  explosao();
-  gradienteOndas(tipo, 3);
-  fullWhite();
+  delay(100);
+  if (contador == 0){
+    while (1)
+    {
+      delay(100);
+      raioArcoiris();
+    }
+  }
+  else if (contador == 1)
+  {
+    while (1)
+    {
+      delay(100);
+      cometa(color, 1);
+    }
+  }
+  else if (contador == 2)
+  {
+    while (1)
+    {
+      delay(100);
+      fillSolidColor(CRGB::Black);
+    }
+  }
+  else if (contador == 3)
+  {
+    resetFunc();
+  }
 }

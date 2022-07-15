@@ -5,12 +5,11 @@
 #define touch 2
 
 int contador = 0;
-uint8_t color = 0;
 
 void(* resetFunc) (void) = 0;
 
 void pinTouch (){
-  delay(50);
+  delay(100);
   FastLED.show();
   fillSolidColor(CRGB::Black);
   contador++;
@@ -20,7 +19,7 @@ void pinTouch (){
 
 void setup() {
   pinMode(touch, INPUT);
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   FastLED.addLeds<WS2812B, PINO_FITA, GRB>(fita, NUM_LEDS_FITA);
   FastLED.setBrightness(100);
@@ -42,7 +41,8 @@ void loop() {
     while (1)
     {
       delay(100);
-      cometa(color, 1);
+      uint8_t color = 200;
+      cometa(color);
     }
   }
   else if (contador == 2)
@@ -54,6 +54,62 @@ void loop() {
     }
   }
   else if (contador == 3)
+  {
+    while (1)
+    {
+      delay(100);
+      gradienteOndas(6);
+    }
+  }
+  else if (contador == 4)
+  {
+    while (1)
+    {
+      delay(100);
+      fillSolidColor(CRGB::White);
+    }
+  }
+  else if (contador == 5)
+  {
+    while (1)
+    {
+      delay(100);
+      fillSolidColor(CRGB::Blue);
+    }
+  }
+  else if (contador == 6)
+  {
+    while (1)
+    {
+      delay(100);
+      fillSolidColor(CRGB::DarkCyan);
+    }
+  }
+  else if (contador == 7)
+  {
+    while (1)
+    {
+      delay(100);
+      fillSolidColor(CRGB::GreenYellow);
+    }
+  }
+  else if (contador == 8)
+  {
+    while (1)
+    {
+      delay(100);
+      fillSolidColor(CRGB::Red);
+    }
+  }
+  else if (contador == 9)
+  {
+    while (1)
+    {
+      delay(100);
+      fillSolidColor(CRGB::Purple);
+    }
+  }
+  else if (contador == 10)
   {
     resetFunc();
   }

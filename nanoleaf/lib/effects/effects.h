@@ -4,9 +4,8 @@
 #include <Arduino.h>
 #include <FastLED.h>
 
-#define NUM_LEDS_FITA 39
 #define PINO_FITA 12
-#define NUM_PALETTES 2
+#define NUM_LEDS_FITA 24
 
 inline CRGB fita[NUM_LEDS_FITA];
 

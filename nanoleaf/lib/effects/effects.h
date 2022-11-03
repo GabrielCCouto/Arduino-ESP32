@@ -44,4 +44,29 @@ void gradienteOndas(int selPalette);
    */
 void cometa(uint8_t color);
 
+/**
+ * @brief
+ *
+ *
+ * @param selcor Varia de 0 a 255
+ */
+void respiracao(byte selcor);
+
+void gradienteMovendo();
+
+void PixelsAleatorios();
+
+void bolasColoridas();
+
+void explosao();
+
+/**
+ * @brief
+ *
+ * @param selcor Varia de 0 a 255
+ */
+void circular(byte selcor);
+
+void raioArcoirisCircular();
+
 #endif

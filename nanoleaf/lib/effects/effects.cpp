@@ -2,6 +2,12 @@
 #include <FastLED.h>
 #include "effects.h"
 
+#define NUM_PALETTES 11
+
+uint16_t breatheLevel = 0;
+uint8_t palleteIndex = 0;
+
+
 void fillSolidColor(CRGB selcor) {
   fill_solid(fita, NUM_LEDS_FITA, selcor);
   FastLED.show();
@@ -211,6 +217,26 @@ void raioArcoiris() {
   fillSolidColor(CRGB::Black);
 }
 
+void raioArcoirisCircular() {
+  static uint8_t hue = 0;
+  int i1 = 0;
+
+  for (int i = 0; i < 10000; i++) {
+    fita[i1] = CHSV(hue++, 255, 255);
+
+    FastLED.show();
+    for (int i = 0; i < NUM_LEDS_FITA; i++) {
+      fita[i].nscale8(250);
+    }
+    i1++;
+    if (i1 == NUM_LEDS_FITA) {
+      i1 = 0;
+    }
+    delay(40);
+  }
+  fillSolidColor(CRGB::Black);
+}
+
 void cometa(uint8_t color) {
   byte fade = 128;
   byte hue = color;
@@ -236,4 +262,110 @@ void cometa(uint8_t color) {
   FastLED.show();
   }
   fillSolidColor(CRGB::Black);
+}
+
+void respiracao(byte selcor) {
+  for (int i = 0; i < 1000; i++) {
+    breatheLevel = beatsin16(10, 0, 255);
+    fill_solid(fita, NUM_LEDS_FITA, CHSV(selcor, 255, breatheLevel));
+    FastLED.show();
+    delay(10);
+  }
+}
+
+void gradienteMovendo() {
+  CRGBPalette16 selPalette = returnPalette(random(1, NUM_PALETTES + 1));
+  for (int i = 0; i < 10000; i++) {
+    fill_palette(fita, NUM_LEDS_FITA, palleteIndex, 255 / NUM_LEDS_FITA, selPalette, 255, LINEARBLEND);
+    FastLED.show();
+    palleteIndex++;
+    delay(10);
+  }
+}
+
+void PixelsAleatorios() {
+  CRGBPalette16 selPalette = returnPalette(random(1, NUM_PALETTES + 1));
+  for (int i = 0; i < 1000; i++) {
+    if (i % 5 == 0) {
+      fita[random16(0, NUM_LEDS_FITA - 1)] = ColorFromPalette(selPalette, random8(), 255, LINEARBLEND);
+    }
+    fadeToBlackBy(fita, NUM_LEDS_FITA, 1);
+    FastLED.show();
+    delay(10);
+  }
+}
+
+void bolasColoridas() {
+  byte dothue = 0;
+  for (int i = 0 ; i < 4000 ; i++) {
+    fadeToBlackBy( fita, NUM_LEDS_FITA, 20);
+
+    for ( int i = 0; i < 8; i++) {
+      fita[beatsin16( i + 7, 0, NUM_LEDS_FITA - 1 )] |= CHSV(dothue, 200, 255);
+      dothue += 32;
+    }
+    FastLED.show();
+  }
+}
+
+void explosao() {
+  FastLED.clear();
+  byte fade = 128;
+  int expSize = NUM_LEDS_FITA / 2;   // tamanho da explosao
+  int numExplosoes = 4;         // quantas explosoes no efeito
+
+  for (int x = 0; x < numExplosoes ; x++) {
+    byte hue = random(1, 255);        // escolhe cor aleatoria
+
+    for (int i = 0; i < expSize; i++) {
+      fita[NUM_LEDS_FITA / 2 + i].setHue(hue);
+      fita[NUM_LEDS_FITA / 2 - i].setHue(hue);
+      if (i > expSize / 2) {
+        i++;
+        fita[NUM_LEDS_FITA / 2 + i].setHue(hue);
+        fita[NUM_LEDS_FITA / 2 - i].setHue(hue);
+      }
+      FastLED.show();
+    }
+
+    delay(100);
+    for (int i = 0; i < 400; i++) {
+      for (int j = 0; j < NUM_LEDS_FITA; j++) {
+        if (random(10) > 8)
+          fita[j] = fita[j].fadeToBlackBy(fade);
+      }
+      delay(10);
+      FastLED.show();
+    }
+  }
+}
+
+void circular(byte selcor) {
+  int tamLuz = 6;
+  int luzes[tamLuz];
+  int luzesTemp;
+  luzes[0] = 125;//CHSV(selcor, 255, 125);
+  luzes[1] = 255;//CHSV(selcor, 255, 255);
+  luzes[2] = 255;//CHSV(selcor, 255, 255);
+  luzes[3] = 125;//CHSV(selcor, 255, 125);
+  luzes[4] = 0;//CHSV(selcor, 255, 0);
+  luzes[5] = 0;//CHSV(selcor, 255, 0);
+
+  for (int i = 0; i < 500; i++) {
+
+    for (int l = 0; l < NUM_LEDS_FITA; l = l + tamLuz) {
+      for (int m = 0; m < tamLuz; m++) {
+        fita[l + m] = CHSV(selcor, 255, luzes[m]);
+      }
+      FastLED.show();
+    }
+
+    luzesTemp = luzes[0];
+    for (int n = 0; n < tamLuz - 1; n++) {
+      luzes[n] = luzes[n + 1];
+    }
+    luzes[tamLuz - 1] = luzesTemp;
+
+    delay(30);
+  }
 }

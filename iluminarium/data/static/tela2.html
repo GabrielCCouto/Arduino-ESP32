@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iluminárium</title>
+    <style>
+        @font-face {
+            font-family: 'FontAwesome';
+            src: url('/data/static/dimitri.ttf') format('opentype');
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 360px;
+            height: 640px;
+            background-image: url('/data/static/background.png');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding-top: 60px;
+            padding-bottom: 60px;
+            padding-left: 40px;
+            padding-right: 40px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        /* Additional styles for color picker */
+        #color-picker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 145px;
+            height: 145px;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background: conic-gradient(
+                from -90deg,
+                red,
+                yellow,
+                lime,
+                aqua,
+                blue,
+                fuchsia,
+                red
+            );
+            cursor: crosshair;
+        }
+
+        #white-circle {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #selected-color {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #000;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #intensity-circle {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 90deg,
+                transparent,
+                white,
+                white
+            );
+            top: -95%;
+            left: 14%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #black-center {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgb(43, 43, 43);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* Estilo para a meia lua */
+        .half-moon {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to right, #00FFFF, #800080);
+            border-radius: 50% 50% 0 0;
+            top: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Conteúdo da segunda tela -->
+        <!-- Color Picker -->
+        <div id="color-picker">
+            <div id="white-circle"></div>
+            <div id="selected-color"></div>
+            <div id="intensity-circle">
+                <!-- Círculo preto no centro do círculo de intensidade -->
+                <div id="black-center">0</div>
+            </div>
+            <!-- Meia lua -->
+            <div class="half-moon"></div>
+        </div>
+        <script>
+            const colorPicker = document.getElementById('color-picker');
+            const selectedColor = document.getElementById('selected-color');
+            const intensityCircle = document.getElementById('intensity-circle');
+            const blackCenter = document.getElementById('black-center');
+            
+            colorPicker.addEventListener('mousemove', (e) => {
+                const x = e.offsetX / colorPicker.offsetWidth;
+                const y = e.offsetY / colorPicker.offsetHeight;
+                const hue = Math.atan2(y - 0.5, x - 0.5) + Math.PI;
+                selectedColor.style.backgroundColor = `hsl(${hue * 180 / Math.PI}, 100%, 50%)`;
+            });
+            
+            intensityCircle.addEventListener('mousemove', (e) => {
+                const y = e.offsetY / intensityCircle.offsetHeight;
+                const intensity = Math.round(99 * (1 - y));
+                blackCenter.textContent = intensity;
+            });
+        </script>
+    </div>
+</body>
+</html>

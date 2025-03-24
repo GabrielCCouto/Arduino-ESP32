@@ -1,16 +1,208 @@
-#include <Arduino.h>
-#include <FastLED.h>
 #include "effects.h"
+#include <EEPROM.h>
 
 #define NUM_PALETTES 11
+
+extern int EFFECT_ADDRESS;
 
 uint16_t breatheLevel = 0;
 uint8_t palleteIndex = 0;
 
 
+void write_effect(int value) {
+  for (unsigned int i = 0; i < sizeof(value); i++) {
+    EEPROM.write(EFFECT_ADDRESS + i, (value >> (i * 8)) & 0xFF);
+  }
+}
+
+
+// int read_effect() {
+//   File file = SPIFFS.open("/data.txt", "r");
+//   if (!file) {
+//     Serial.println("Failed to open file for reading");
+//     return 0;
+//   }
+
+//   String valueString = file.readStringUntil('\n');
+
+//   file.close();
+
+//   return valueString.toInt();
+// }
+
+// void write_effect(int value) {
+//   File file = SPIFFS.open("/data.txt", "w");
+//   if (!file) {
+//     Serial.println("Failed to open file for writing");
+//     return;
+//   }
+
+//   String valueString = String(value);
+
+//   file.println(valueString);
+
+//   file.close();
+// }
+
+void which_effect(int effect_counter, struct EffectsStatus *status) {
+
+  // Set Static Colors
+  if (effect_counter >= 0 && effect_counter <=8) {
+    switch (effect_counter) {
+      case DISABLE_LAMP:
+        fillSolidColor(CRGB::Black);
+        break;
+      case COLOR_RED:
+        fillSolidColor(CRGB::Red);
+        break;
+      case COLOR_BLUE:
+        fillSolidColor(CRGB::Blue);
+        break;
+      case COLOR_GREEN:
+        fillSolidColor(CRGB::Green);
+        break;
+      case COLOR_WHITE:
+        fillSolidColor(CRGB::White);
+        break;
+      case COLOR_ORANGE_RED:
+        fillSolidColor(CRGB::OrangeRed);
+        break;
+      case COLOR_YELLOW:
+        fillSolidColor(CRGB::Yellow);
+        break;
+      case COLOR_DARK_VAIOLET:
+        fillSolidColor(CRGB::DarkViolet);
+        break;
+      case COLOR_CYAN:
+        fillSolidColor(CRGB::Cyan);
+        break;
+      default:
+        fillSolidColor(CRGB::Black);
+        write_effect(0);
+        break;
+    }
+  }
+
+  // Set Color Effect wave Gradient
+  if (effect_counter >= 9 && effect_counter <= 13)
+  {
+    switch (effect_counter) {
+      case GRADIENT_FIRE_ICE:
+        gradienteOndas(1, status);
+        break;
+      case GRADIENT_HEAT_MAP:
+        gradienteOndas(3, status);
+        break;
+      case GRADIENT_PURPLE:
+        gradienteOndas(6, status);
+        break;
+      case GRADIENT_BLUE_GREEN:
+        gradienteOndas(4, status);
+        break;
+      case GRADIENT_SUNSET:
+        gradienteOndas(5, status);
+        break;
+      default:
+        fillSolidColor(CRGB::Black);
+        write_effect(0);
+        break;
+    }
+  }
+
+  // Set Color Effect wave Gradient
+  if (effect_counter >= 14 && effect_counter <= 18)
+  {
+    switch (effect_counter) {
+      case CIRCULAR_GRADIENT_FIRE_ICE:
+        circular_gradient(1, status);
+        break;
+      case CIRCULAR_GRADIENT_HEAT_MAP:
+        circular_gradient(3, status);
+        break;
+      case CIRCULAR_GRADIENT_PURPLE:
+        circular_gradient(6, status);
+        break;
+      case CIRCULAR_GRADIENT_BLUE_GREEN:
+        circular_gradient(4, status);
+        break;
+      case CIRCULAR_GRADIENT_SUNSET:
+        circular_gradient(5, status);
+        break;
+      default:
+        fillSolidColor(CRGB::Black);
+        write_effect(0);
+        break;
+    }
+  }
+
+  // Random effects
+  if (effect_counter >= 19 && effect_counter <= 21)
+  {
+    switch (effect_counter)
+    {
+    case EXPLOSION:
+        explosion(status);
+        break;
+      case HELICOPTER:
+        helicopter(status);
+        break;
+      case BREATHING:
+        breathing(status);
+        break;
+      default:
+        fillSolidColor(CRGB::Black);
+        write_effect(0);
+        break;
+    }
+  }
+
+  if (effect_counter >= 22 && effect_counter <= 23)
+  {
+    switch (effect_counter)
+    {
+    case RAINBOW:
+        rainbow(status);
+        break;
+      case CIRCULAR_RAINBOW:
+        circular_rainbow(status);
+        break;
+      default:
+        fillSolidColor(CRGB::Black);
+        write_effect(0);
+        break;
+    }
+  }
+}
+
 void fillSolidColor(CRGB selcor) {
-  fill_solid(fita, NUM_LEDS_FITA, selcor);
-  FastLED.show();
+  for (int i = 0; i < NUM_LEDS_FITA; i++)
+  {
+    fill_solid(fita, NUM_LEDS_FITA, selcor);
+    FastLED.show();
+  }
+}
+
+void colorLightChanged(uint8_t brightness, uint32_t rgb) {
+  float r = ((rgb >> 16) & 0xFF);
+  float g = ((rgb >>  8) & 0xFF);
+  float b = (rgb & 0xFF);
+
+  FastLED.setBrightness(brightness);
+
+  bool cozy_white = false;
+  if(r == 255 && b == 79 && g == 162) {
+    cozy_white = true;
+  }
+
+  for (int i = 0; i < NUM_LEDS_FITA; i++)
+  {
+    if (cozy_white) {
+      fill_solid(fita, NUM_LEDS_FITA, CRGB::OrangeRed);
+    } else {
+      fill_solid(fita, NUM_LEDS_FITA, CRGB(r,g,b));
+    }
+    FastLED.show();
+  }
 }
 
 DEFINE_GRADIENT_PALETTE( fireandice_gp ) {
@@ -178,26 +370,30 @@ CRGBPalette16 returnPalette(int selPalette) {
   }
 }
 
-void gradienteOndas(int selPalette) {
+void gradienteOndas(int selPalette, struct EffectsStatus *status) {
   CRGBPalette16 Palette = returnPalette(selPalette);
   int indexPal = 2;
-  for (int i = 0; i < 10000; i++) {
+  while (status->break_effect != true) {
     byte beatA = beatsin16(30, 0, 255);
     byte beatB = beatsin16(20, 0, 255);
     fill_palette(fita, NUM_LEDS_FITA, (beatA + beatB) / 2, indexPal, Palette, 255, LINEARBLEND);
     FastLED.show();
     delay(10);
+    if(status->break_effect == true) {
+      fillSolidColor(CRGB::Black);
+      return;
+    }
   }
 }
 
-void raioArcoiris() {
+void rainbow(struct EffectsStatus *status) {
   static uint8_t hue = 0;
   int dir1 = 0;
   int i1 = 0;
 
-  for (int i = 0; i < 10000; i++) {
+  while (status->break_effect != true)
+  {
     fita[i1] = CHSV(hue++, 255, 255);
-
     FastLED.show();
     for (int i = 0; i < NUM_LEDS_FITA; i++) {
       fita[i].nscale8(250);
@@ -212,16 +408,20 @@ void raioArcoiris() {
     } else if ( i1 == 0) {
       dir1 = 0;
     }
-    delay(10);
+    delay(20);
+    if(status->break_effect == true) {
+      fillSolidColor(CRGB::Black);
+      return;
+    }
   }
   fillSolidColor(CRGB::Black);
 }
 
-void raioArcoirisCircular() {
+void circular_rainbow(struct EffectsStatus *status) {
   static uint8_t hue = 0;
   int i1 = 0;
 
-  for (int i = 0; i < 10000; i++) {
+  while (status->break_effect != true) {
     fita[i1] = CHSV(hue++, 255, 255);
 
     FastLED.show();
@@ -233,71 +433,111 @@ void raioArcoirisCircular() {
       i1 = 0;
     }
     delay(40);
+    if(status->break_effect == true) {
+      fillSolidColor(CRGB::Black);
+      return;
+    }
   }
   fillSolidColor(CRGB::Black);
 }
 
-void cometa(uint8_t color) {
-  byte fade = 128;
-  byte hue = color;
+void cometa(struct EffectsStatus *status) {
+  byte fade = 254;
+  int random_color = random (50, 255);
 
-  int cometaSize = 5;
+  int cometaSize = 2;
   int iDirection = 1;
   int iPos = 0;
 
-  //hue = random(1, 255);
-  for (int i = 0; i < 10000; i++) {
+  while (status->break_effect != true) {
     iPos += iDirection;
     if (iPos == (NUM_LEDS_FITA - cometaSize) || iPos == 0)
       iDirection *= -1;
 
     for (int i = 0; i < cometaSize; i++)
-      fita[iPos + i].setHue(hue);
+      fita[iPos + i].setHue(random_color);
 
     // Randomly fade the LEDs
     for (int j = 0; j < NUM_LEDS_FITA; j++)
       if (random(10) > 5)
         fita[j] = fita[j].fadeToBlackBy(fade);
-  delay(20);
-  FastLED.show();
+    delay(40);
+    FastLED.show();
+    if(status->break_effect == true) {
+        fillSolidColor(CRGB::Black);
+      return;
+    }
   }
   fillSolidColor(CRGB::Black);
 }
 
-void respiracao(byte selcor) {
-  for (int i = 0; i < 1000; i++) {
-    breatheLevel = beatsin16(10, 0, 255);
-    fill_solid(fita, NUM_LEDS_FITA, CHSV(selcor, 255, breatheLevel));
-    FastLED.show();
-    delay(10);
+void breathing(struct EffectsStatus *status) {
+  int random_color = random (15, 255);
+  while (status->break_effect != true) {
+    for (int i = 0; i < 100; i++) {
+      breatheLevel = beatsin16(10, 0, 255);
+      fill_solid(fita, NUM_LEDS_FITA, CHSV(random_color, 255, breatheLevel));
+      FastLED.show();
+      delay(10);
+      if(status->break_effect == true) {
+        fillSolidColor(CRGB::Black);
+      return;
+      }
+    }
   }
 }
 
-void gradienteMovendo() {
-  CRGBPalette16 selPalette = returnPalette(random(1, NUM_PALETTES + 1));
-  for (int i = 0; i < 10000; i++) {
-    fill_palette(fita, NUM_LEDS_FITA, palleteIndex, 255 / NUM_LEDS_FITA, selPalette, 255, LINEARBLEND);
+void circular_gradient(int selPalette, struct EffectsStatus *status) {
+  CRGBPalette16 palette = returnPalette(selPalette);
+  while (status->break_effect != true) {
+    fill_palette(fita, NUM_LEDS_FITA, palleteIndex, 255 / NUM_LEDS_FITA, palette, 255, LINEARBLEND);
     FastLED.show();
     palleteIndex++;
     delay(10);
   }
 }
 
-void PixelsAleatorios() {
-  CRGBPalette16 selPalette = returnPalette(random(1, NUM_PALETTES + 1));
-  for (int i = 0; i < 1000; i++) {
-    if (i % 5 == 0) {
-      fita[random16(0, NUM_LEDS_FITA - 1)] = ColorFromPalette(selPalette, random8(), 255, LINEARBLEND);
-    }
-    fadeToBlackBy(fita, NUM_LEDS_FITA, 1);
+void searching_network() {
+  CRGBPalette16 selPalette = returnPalette(4);
+  for (int i = 0; i < 900; i++) {
+    fill_palette(fita, NUM_LEDS_FITA, palleteIndex, 255 / NUM_LEDS_FITA, selPalette, 255, LINEARBLEND);
     FastLED.show();
+    palleteIndex++;
     delay(10);
+  }
+  fillSolidColor(CRGB::OrangeRed);
+}
+
+void network_connected() {
+  for (int i = 0; i < 2000; i++) {
+    breatheLevel = beatsin16(20, 60, 255);
+    fill_solid(fita, NUM_LEDS_FITA, CHSV(138, 255, breatheLevel));
+    FastLED.show();
+    delay(3);
   }
 }
 
-void bolasColoridas() {
+void PixelsAleatorios(struct EffectsStatus *status) {
+  CRGBPalette16 selPalette = returnPalette(random(1, NUM_PALETTES + 1));
+  while (status->break_effect != true) {
+    for (int i = 0; i < 1000; i++) {
+      if (i % 5 == 0) {
+        fita[random16(0, NUM_LEDS_FITA - 1)] = ColorFromPalette(selPalette, random8(), 255, LINEARBLEND);
+      }
+      fadeToBlackBy(fita, NUM_LEDS_FITA, 1);
+      FastLED.show();
+      delay(10);
+      if(status->break_effect == true) {
+        fillSolidColor(CRGB::Black);
+        return;
+      }
+    }
+  }
+}
+
+void bolasColoridas(struct EffectsStatus *status) {
   byte dothue = 0;
-  for (int i = 0 ; i < 4000 ; i++) {
+  while (status->break_effect != true) {
     fadeToBlackBy( fita, NUM_LEDS_FITA, 20);
 
     for ( int i = 0; i < 8; i++) {
@@ -308,39 +548,47 @@ void bolasColoridas() {
   }
 }
 
-void explosao() {
+void explosion(struct EffectsStatus *status) {
   FastLED.clear();
   byte fade = 128;
   int expSize = NUM_LEDS_FITA / 2;   // tamanho da explosao
   int numExplosoes = 4;         // quantas explosoes no efeito
 
-  for (int x = 0; x < numExplosoes ; x++) {
-    byte hue = random(1, 255);        // escolhe cor aleatoria
+  while (status->break_effect != true) {
+    for (int x = 0; x < numExplosoes ; x++) {
+      byte hue = random(1, 255);        // escolhe cor aleatoria
 
-    for (int i = 0; i < expSize; i++) {
-      fita[NUM_LEDS_FITA / 2 + i].setHue(hue);
-      fita[NUM_LEDS_FITA / 2 - i].setHue(hue);
-      if (i > expSize / 2) {
-        i++;
+      for (int i = 0; i < expSize; i++) {
         fita[NUM_LEDS_FITA / 2 + i].setHue(hue);
         fita[NUM_LEDS_FITA / 2 - i].setHue(hue);
+        if (i > expSize / 2) {
+          i++;
+          fita[NUM_LEDS_FITA / 2 + i].setHue(hue);
+          fita[NUM_LEDS_FITA / 2 - i].setHue(hue);
+        }
+        FastLED.show();
       }
-      FastLED.show();
-    }
 
-    delay(100);
-    for (int i = 0; i < 400; i++) {
-      for (int j = 0; j < NUM_LEDS_FITA; j++) {
-        if (random(10) > 8)
-          fita[j] = fita[j].fadeToBlackBy(fade);
+      if(status->break_effect == true) {
+        fillSolidColor(CRGB::Black);
+        return;
       }
-      delay(10);
-      FastLED.show();
+
+      delay(100);
+      for (int i = 0; i < 400; i++) {
+        for (int j = 0; j < NUM_LEDS_FITA; j++) {
+          if (random(10) > 8)
+            fita[j] = fita[j].fadeToBlackBy(fade);
+        }
+        delay(10);
+        FastLED.show();
+      }
     }
   }
 }
 
-void circular(byte selcor) {
+void helicopter(struct EffectsStatus *status) {
+  int random_color = random (50, 255);
   int tamLuz = 6;
   int luzes[tamLuz];
   int luzesTemp;
@@ -351,13 +599,18 @@ void circular(byte selcor) {
   luzes[4] = 0;//CHSV(selcor, 255, 0);
   luzes[5] = 0;//CHSV(selcor, 255, 0);
 
-  for (int i = 0; i < 500; i++) {
+  while (status->break_effect != true) {
 
     for (int l = 0; l < NUM_LEDS_FITA; l = l + tamLuz) {
       for (int m = 0; m < tamLuz; m++) {
-        fita[l + m] = CHSV(selcor, 255, luzes[m]);
+        fita[l + m] = CHSV(random_color, 255, luzes[m]);
       }
       FastLED.show();
+    }
+
+    if(status->break_effect == true) {
+        fillSolidColor(CRGB::Black);
+      return;
     }
 
     luzesTemp = luzes[0];

@@ -1,70 +1,76 @@
 #include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_PWMServoDriver.h>
+#include <TMCStepper.h>
 
-Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+// Defina os pinos para Step, Dir e a comunicação UART
+#define STEP_PIN 2   // Conecte ao pino STEP do TMC2208
+#define DIR_PIN 3    // Conecte ao pino DIR do TMC2208
+#define EN_PIN 4     // Pino de Enable do driver TMC2208
+#define SERIAL_PORT Serial  // Usando a Serial padrão para comunicação UART
 
-#define SERVOMIN  150 // This is the 'minimum' pulse length count (out of 4096)
-#define SERVOMAX  600 // This is the 'maximum' pulse length count (out of 4096)
-#define USMIN  600 // This is the rounded 'minimum' microsecond length based on the minimum pulse of 150
-#define USMAX  2400 // This is the rounded 'maximum' microsecond length based on the maximum pulse of 600
-#define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
+// Parâmetros do motor e redução
+const int stepsPerRevolution = 200;  // Número de passos para 1 rotação completa do motor no modo full step
+const int microstepSetting = 16;    // Configuração de micropassos via UART (16 micropassos)
+const float reductionRatio = 12.15;       // Relação de redução da caixa de engrenagens
 
-uint8_t servonum = 0;
+// Número total de passos necessários para 1 volta na saída da caixa de redução
+const int totalSteps = stepsPerRevolution * microstepSetting * reductionRatio;
 
-void setServoPulse(uint8_t n, double pulse) {
-  double pulselength;
-  
-  pulselength = 1000000;   // 1,000,000 us per second
-  pulselength /= SERVO_FREQ;   // Analog servos run at ~60 Hz updates
-  Serial.print(pulselength); Serial.println(" us per period");
-  pulselength /= 4096;  // 12 bits of resolution
-  Serial.print(pulselength); Serial.println(" us per bit");
-  pulse *= 1000000;  // convert input seconds to us
-  pulse /= pulselength;
-  Serial.println(pulse);
-  pwm.setPWM(n, 0, pulse);
-}
+// Defina a corrente máxima (em miliamperes) e outras configurações
+#define CURRENT 800   // Corrente de operação (mA)
+#define R_SENSE 0.11  // Valor do resistor de sense (Ω)
+
+// Inicializa o driver TMC2208
+TMC2208Stepper driver(&SERIAL_PORT, R_SENSE);  // Driver TMC2208 usando Serial padrão
 
 void setup() {
+  // Configuração de pinos
+  pinMode(STEP_PIN, OUTPUT);
+  pinMode(DIR_PIN, OUTPUT);
+  pinMode(EN_PIN, OUTPUT);
+  digitalWrite(EN_PIN, LOW);  // Habilita o driver TMC2208
+
+  // Inicializa a comunicação serial
+  SERIAL_PORT.begin(115200);
+
+  // Configura o driver TMC2208
+  driver.begin();                // Inicializa o driver
+  driver.toff(5);                // Configura o tempo de desligamento
+  driver.rms_current(CURRENT);    // Configura a corrente RMS do motor
+  driver.microsteps(microstepSetting);  // Configura os micropassos (16 micropassos)
+
+  // Depuração
   Serial.begin(9600);
-  Serial.println("8 channel Servo test!");
+  Serial.println("Iniciando o controle do motor de passo com TMC2208...");
+}
 
-  pwm.begin();
-
-  pwm.setOscillatorFrequency(27000000);
-  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
-
-  delay(10);
+// Função para mover o motor
+void moveMotor(int steps, bool direction) {
+  digitalWrite(DIR_PIN, direction ? HIGH : LOW);  // Define a direção do motor
+  
+  for (int i = 0; i < steps; i++) {
+    digitalWrite(STEP_PIN, HIGH);
+    delayMicroseconds(100);  // Ajuste o delay conforme necessário
+    digitalWrite(STEP_PIN, LOW);
+    delayMicroseconds(100);  // Ajuste o delay conforme necessário
+    Serial.print("Passo: ");
+    Serial.println(i + 1);
+  }
 }
 
 void loop() {
-  // Drive each servo one at a time using setPWM()
-  Serial.println(servonum);
-  for (uint16_t pulselen = SERVOMIN; pulselen < SERVOMAX; pulselen++) {
-    pwm.setPWM(servonum, 0, pulselen);
-  }
+  // Gira o motor 1 volta no sentido horário
+  Serial.println("Girando 1 volta no sentido horário");
+  Serial.print("totalSteps = ");
+  Serial.println(totalSteps);
+  moveMotor(totalSteps, true);  // Sentido horário
+  
+  delay(2000);  // Pausa de 2 segundos
 
-  delay(500);
-  for (uint16_t pulselen = SERVOMAX; pulselen > SERVOMIN; pulselen--) {
-    pwm.setPWM(servonum, 0, pulselen);
-  }
-
-  delay(500);
-
-  // Drive each servo one at a time using writeMicroseconds(), it's not precise due to calculation rounding!
-  // The writeMicroseconds() function is used to mimic the Arduino Servo library writeMicroseconds() behavior.
-  for (uint16_t microsec = USMIN; microsec < USMAX; microsec++) {
-    pwm.writeMicroseconds(servonum, microsec);
-  }
-
-  delay(500);
-  for (uint16_t microsec = USMAX; microsec > USMIN; microsec--) {
-    pwm.writeMicroseconds(servonum, microsec);
-  }
-
-  delay(500);
-
-  servonum++;
-  if (servonum > 7) servonum = 0; // Testing the first 8 servo channels
+  // Gira o motor 1 volta no sentido anti-horário
+  Serial.println("Girando 1 volta no sentido anti-horário");
+  Serial.print("totalSteps = ");
+  Serial.println(totalSteps);
+  moveMotor(totalSteps, false);  // Sentido anti-horário
+  
+  delay(2000);  // Pausa de 2 segundos
 }

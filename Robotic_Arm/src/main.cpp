@@ -1,76 +1,81 @@
 #include <Arduino.h>
-#include <TMCStepper.h>
 
-// Defina os pinos para Step, Dir e a comunicação UART
-#define STEP_PIN 2   // Conecte ao pino STEP do TMC2208
-#define DIR_PIN 3    // Conecte ao pino DIR do TMC2208
-#define EN_PIN 4     // Pino de Enable do driver TMC2208
-#define SERIAL_PORT Serial  // Usando a Serial padrão para comunicação UART
+// --- Configuração dos motores (6 motores) ---
 
-// Parâmetros do motor e redução
-const int stepsPerRevolution = 200;  // Número de passos para 1 rotação completa do motor no modo full step
-const int microstepSetting = 16;    // Configuração de micropassos via UART (16 micropassos)
-const float reductionRatio = 12.15;       // Relação de redução da caixa de engrenagens
+const int stepPins[6] = {2, 5, 8, 11, 14, 17};
+const int dirPins[6]  = {3, 6, 9, 12, 15, 18};
+const int enPins[6]   = {4, 7, 10, 13, 16, 19};
 
-// Número total de passos necessários para 1 volta na saída da caixa de redução
-const int totalSteps = stepsPerRevolution * microstepSetting * reductionRatio;
+const float stepsPerRev = 200;     // full steps
+const int microsteps = 16;
+const float reductionRatio = 12.15;
+const float stepsPerDegree = (stepsPerRev * microsteps * reductionRatio) / 360.0;
 
-// Defina a corrente máxima (em miliamperes) e outras configurações
-#define CURRENT 800   // Corrente de operação (mA)
-#define R_SENSE 0.11  // Valor do resistor de sense (Ω)
+float currentAngles[6] = {0};  // Guarda o ângulo atual de cada motor
 
-// Inicializa o driver TMC2208
-TMC2208Stepper driver(&SERIAL_PORT, R_SENSE);  // Driver TMC2208 usando Serial padrão
-
-void setup() {
-  // Configuração de pinos
-  pinMode(STEP_PIN, OUTPUT);
-  pinMode(DIR_PIN, OUTPUT);
-  pinMode(EN_PIN, OUTPUT);
-  digitalWrite(EN_PIN, LOW);  // Habilita o driver TMC2208
-
-  // Inicializa a comunicação serial
-  SERIAL_PORT.begin(115200);
-
-  // Configura o driver TMC2208
-  driver.begin();                // Inicializa o driver
-  driver.toff(5);                // Configura o tempo de desligamento
-  driver.rms_current(CURRENT);    // Configura a corrente RMS do motor
-  driver.microsteps(microstepSetting);  // Configura os micropassos (16 micropassos)
-
-  // Depuração
-  Serial.begin(9600);
-  Serial.println("Iniciando o controle do motor de passo com TMC2208...");
+void setupMotor(int i) {
+  pinMode(stepPins[i], OUTPUT);
+  pinMode(dirPins[i], OUTPUT);
+  pinMode(enPins[i], OUTPUT);
+  digitalWrite(enPins[i], LOW); // Ativa driver
 }
 
-// Função para mover o motor
-void moveMotor(int steps, bool direction) {
-  digitalWrite(DIR_PIN, direction ? HIGH : LOW);  // Define a direção do motor
-  
+void moveToAngle(int motorIndex, float targetAngle) {
+  float delta = targetAngle - currentAngles[motorIndex];
+  bool direction = delta >= 0;
+  int steps = abs(delta * stepsPerDegree);
+
+  digitalWrite(dirPins[motorIndex], direction ? HIGH : LOW);
+
   for (int i = 0; i < steps; i++) {
-    digitalWrite(STEP_PIN, HIGH);
-    delayMicroseconds(100);  // Ajuste o delay conforme necessário
-    digitalWrite(STEP_PIN, LOW);
-    delayMicroseconds(100);  // Ajuste o delay conforme necessário
-    Serial.print("Passo: ");
-    Serial.println(i + 1);
+    digitalWrite(stepPins[motorIndex], HIGH);
+    delayMicroseconds(100);
+    digitalWrite(stepPins[motorIndex], LOW);
+    delayMicroseconds(100);
   }
+
+  currentAngles[motorIndex] = targetAngle;
+}
+
+void setup() {
+  Serial.begin(115200);
+  for (int i = 0; i < 6; i++) {
+    setupMotor(i);
+  }
+  Serial.println("Sistema pronto para receber comandos.");
 }
 
 void loop() {
-  // Gira o motor 1 volta no sentido horário
-  Serial.println("Girando 1 volta no sentido horário");
-  Serial.print("totalSteps = ");
-  Serial.println(totalSteps);
-  moveMotor(totalSteps, true);  // Sentido horário
-  
-  delay(2000);  // Pausa de 2 segundos
+  if (Serial.available()) {
+    String input = Serial.readStringUntil('\n');
+    input.trim();
 
-  // Gira o motor 1 volta no sentido anti-horário
-  Serial.println("Girando 1 volta no sentido anti-horário");
-  Serial.print("totalSteps = ");
-  Serial.println(totalSteps);
-  moveMotor(totalSteps, false);  // Sentido anti-horário
-  
-  delay(2000);  // Pausa de 2 segundos
+    if (input.startsWith("M")) {
+      int motorIndex = input.substring(1, 2).toInt() - 1;
+      float angle = input.substring(3).toFloat();
+      if (motorIndex >= 0 && motorIndex < 6) {
+        Serial.print("Movendo motor ");
+        Serial.print(motorIndex + 1);
+        Serial.print(" para ");
+        Serial.print(angle);
+        Serial.println(" graus");
+        moveToAngle(motorIndex, angle);
+        Serial.println("OK");
+      } else {
+        Serial.println("Motor inválido");
+      }
+    } else if (input.startsWith("J")) {
+      input.remove(0, 2);  // remove "J "
+      for (int i = 0; i < 6; i++) {
+        int spaceIndex = input.indexOf(' ');
+        String angleStr = (spaceIndex == -1) ? input : input.substring(0, spaceIndex);
+        float angle = angleStr.toFloat();
+        moveToAngle(i, angle);
+        input = (spaceIndex == -1) ? "" : input.substring(spaceIndex + 1);
+      }
+      Serial.println("OK");
+    } else {
+      Serial.println("Comando desconhecido.");
+    }
+  }
 }

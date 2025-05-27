@@ -6,7 +6,7 @@
 
 class MagneticEncoder {
 public:
-  MagneticEncoder(AMS_5600& sensor, int stepPin, int dirPin, float kp, float ki, float kd);
+  MagneticEncoder(AMS_5600& sensor, int stepPin, int dirPin, float kp, float ki, float kd, float gearRatio = 1.0);
 
   void setTargetAngle(float angleDeg);   // em graus
   void update();                         // chama em loop()
@@ -18,6 +18,10 @@ private:
   AMS_5600* _sensor;
   int _stepPin, _dirPin;
 
+  float _gearRatio;
+  long _turns = 0;
+  float _lastRawAngle = 0.0;
+
   float _targetAngle;
   float _currentAngle;
   float _error;
@@ -28,7 +32,7 @@ private:
 
   unsigned long _lastUpdateTime;
 
-  void stepMotor(bool direction);
+  void stepMotor(bool direction, int steps, int stepDelay);
 };
 
 #endif
